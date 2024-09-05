@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Canvas playground</title>
+        <style type="text/css">
+            #canvas {
+                width: 1080px;
+                height: 1350px;
+                border: 1px solid black;
+                margin: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas" width="1080" height="1350"></canvas>
+
+        <script type="text/template" id="lyrics">
+            [00:03.000]Line 1 lyrics Line 1 lyrics
+            [00:07.200]Line 2 lyrics
+            [00:11.100]Line 3 lyrics
+            [00:14.000]Line 4 lyrics Line 4 lyrics Line 4 lyrics
+            [00:18.250]Line 5 lyrics
+            [00:19.020]Line 6 lyrics
+            [00:21.130](end)
+        </script>
+
+        <script type="text/javascript">
+            const canvas = document.getElementById("canvas"),
+                ctx = canvas.getContext("2d"),
+                regex = /^\[(?<minutes>\d+)\:(?<seconds>\d+)\.(?<milliseconds>\d+)\](?<lyric>.*)$/,
+                fontSize = 70, // (6 lines of text, with a 1/2 line space )
+                lineHeight = Math.floor(fontSize * 1.5),
+                middleX = (fontSize / 2) + (lineHeight * 5), // where the main line will be placed, roughly the vertical middle
+                middleY = lineHeight;
+
+            ctx.font= fontSize + "px Verdana";
+            ctx.fillStyle = "red";
+            ctx.textAlign = "center";
+            // ctx.textBaseline = "middle";
+            const width = canvas.width/2, height = canvas.height/2;
+
+            const lyricsAll = document.getElementById('lyrics').innerHTML.trim(),
+                lines = lyricsAll.split("\n").map(function(line) {
+                    if (!this.prevTime) {
+                        this.prevTime = 0;
+                    }
+                    line = line.trim().match(regex).groups;
+                    let currTime = calculateMilliseconds(line),
+                        ret = {
+                            lyric: line.lyric,
+                            time: (currTime - this.prevTime)
+                        };
+                    this.prevTime = currTime;
+                    return ret;
+                });
+            // console.log(lines);
+            setTimeout(draw, lines[0].time, 0);
+
+            function draw(i) {
+                ctx.clearRect(0, 0, 1080, 1350);
+                let splitLines = wrapText(ctx, lines[i].lyric, width, middleX, 1080 - middleY, lineHeight);
+                console.log(splitLines);
+                splitLines.forEach(element => {
+                    ctx.fillText(...element);
+                });
+                // ctx.fillText(lines[i].lyric, width, height);
+                if (i != 0) {
+                    // draw previous line above
+                }
+                if (i != lines.length-1) {
+                    // draw next line below
+                }
+                i++;
+                if (i < lines.length) {
+                    setTimeout(draw, lines[i].time, i);
+                }
+
+                // show 3 lines at a time:
+                // first and third with faded text, middle with proper text
+            }
+
+            function calculateMilliseconds(line) {
+                let minutes = parseInt(line.minutes),
+                    seconds = parseInt(line.seconds),
+                    milliseconds = parseInt(line.milliseconds);
+                return ((minutes * 60) + seconds) * 1000 + milliseconds;
+            }
+
+            // @description: wrapText wraps HTML canvas text onto a canvas of fixed width
+            // @param ctx - the context for the canvas we want to wrap text on
+            // @param text - the text we want to wrap.
+            // @param x - the X starting point of the text on the canvas.
+            // @param y - the Y starting point of the text on the canvas.
+            // @param maxWidth - the width at which we want line breaks to begin - i.e. the maximum width of the canvas.
+            // @param lineHeight - the height of each line, so we can space them below each other.
+            // @returns an array of [ lineText, x, y ] for all lines
+            const wrapText = function (ctx, text, x, y, maxWidth, lineHeight) {
+                // First, start by splitting all of our text into words, but splitting it into an array split by spaces
+                let words = text.split(' ');
+                let line = ''; // This will store the text of the current line
+                let testLine = ''; // This will store the text when we add a word, to test if it's too long
+                let lineArray = []; // This is an array of lines, which the function will return
+
+                // Lets iterate over each word
+                for (var n = 0; n < words.length; n++) {
+                    // Create a test line, and measure it..
+                    testLine += `${words[n]} `;
+                    let metrics = ctx.measureText(testLine);
+                    let testWidth = metrics.width;
+                    // If the width of this test line is more than the max width
+                    if (testWidth > maxWidth && n > 0) {
+                        // Then the line is finished, push the current line into "lineArray"
+                        lineArray.push([line, x, y]);
+                        // Increase the line height, so a new line is started
+                        y += lineHeight;
+                        // Update line and test line to use this word as the first word on the next line
+                        line = `${words[n]} `;
+                        testLine = `${words[n]} `;
+                    }
+                    else {
+                        // If the test line is still less than the max width, then add the word to the current line
+                        line += `${words[n]} `;
+                    }
+                    // If we never reach the full max width, then there is only one line.. so push it into the lineArray so we return something
+                    if (n === words.length - 1) {
+                        lineArray.push([line, x, y]);
+                    }
+                }
+                // Return the line array
+                return lineArray;
+            }
+
+        </script>
+    </body>
+</html>
