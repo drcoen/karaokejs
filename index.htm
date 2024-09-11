@@ -25,126 +25,176 @@
         </script>
 
         <script type="text/javascript">
-            const canvas = document.getElementById("canvas"),
-                ctx = canvas.getContext("2d"),
-                regex = /^\[(?<minutes>\d+)\:(?<seconds>\d+)\.(?<milliseconds>\d+)\](?<lyric>.*)$/,
-                fontSize = 70, // (6 lines of text, with a 1/2 line space )
-                lineHeight = Math.floor(fontSize * 1.5),
-                startY = (fontSize / 2) + (lineHeight * 5), // where the main line will be placed, roughly the vertical middle
-                startX = lineHeight; // distance from the left edge
+            class Lyric {
+                constructor(line) {
+                    let regex = /^\[(?<minutes>\d+)\:(?<seconds>\d+)\.(?<milliseconds>\d+)\](?<lyric>.*)$/,
+                        data = line.trim().match(regex).groups;
+                    this.minutes = parseInt(data.minutes);
+                    this.seconds = parseInt(data.seconds);
+                    this.milliseconds = parseInt(data.milliseconds);
+                    this.text = data.lyric;
+                }
 
-            ctx.font= "bold " + fontSize + "px Verdana";
-            ctx.fillStyle = "red";
-            ctx.textAlign = "center";
-            // ctx.textBaseline = "middle";
-            const width = canvas.width/2, height = canvas.height/2;
+                startTimeInMilliseconds () {
+                    return ((this.minutes * 60) + this.seconds) * 1000 + this.milliseconds;
+                }
+            }
 
-            const lyricsAll = document.getElementById('lyrics').innerHTML.trim(),
-                lines = lyricsAll.split("\n").map(function(line) {
-                    if (!this.prevTime) {
-                        this.prevTime = 0;
-                    }
-                    line = line.trim().match(regex).groups;
-                    let currTime = calculateMilliseconds(line),
-                        ret = {
-                            lyric: line.lyric,
-                            time: (currTime - this.prevTime)
-                        };
-                    this.prevTime = currTime;
-                    return ret;
-                });
-            setTimeout(draw, lines[0].time, 0);
+            class Song {
+                constructor(lyricsText) {
+                    let prevTime = 0;
+                    this.lyrics = lyricsText.split("\n").map(function(line) {
+                        let lyric = new Lyric(line);
+                        let currTime = lyric.startTimeInMilliseconds(),
+                            ret = {
+                                lyric: lyric,
+                                duration: (currTime - prevTime)
+                            };
+                        prevTime = currTime;
+                        return ret;
+                    });
+                    this.numLyrics = this.lyrics.length;
+                }
+            }
 
-            function draw(i) {
-                ctx.clearRect(0, 0, 1080, 1350);
-                ctx.fillStyle = "red";
-                let splitLines = wrapText(ctx, lines[i].lyric, 1080 - startX, lineHeight),
-                    numLines = splitLines.length;
-                    thisY = startY,
-                    j = 0;
-                splitLines.forEach(line => {
-                    thisY = thisY + (lineHeight * j);
-                    ctx.fillText(line, width, thisY);
-                    j++;
-                });
-                if (i < lines.length-1) {
-                    thisY += lineHeight, j = 0; // move to next line and reset counter
-                    // draw next line below
-                    ctx.fillStyle = "grey";
-                    // can use thisY and j from above
-                    let splitLines = wrapText(ctx, lines[i+1].lyric, 1080 - startX, lineHeight);
+            class LyricVideo {
+                // @param options.fontSize - font size
+                // @param options.lineHeight - line height
+                // @param options.startX
+                // @param options.startYs
+                // @param options.activeColor
+                // @param options.inactiveColor
+                constructor(song, canvas, options = {}) {
+                    this.song = song;
+                    this.canvas = canvas;
+                    this.ctx = this.canvas.getContext('2d');
+                    this.width = this.canvas.width;
+                    this.height = this.canvas.height;
+                    this.fontSize = options.fontSize || 70;
+                    this.lineHeight = options.lineHeight || (this.fontSize * 1.5);
+                    this.startY = options.startY || ((this.fontSize / 2) + (this.lineHeight * 5));
+                    this.startX = options.startX || this.lineHeight;
+                    this.activeColor = options.activeColor || 'red';
+                    this.inactiveColor = options.inactiveColor || 'grey';
+                    this.endX = this.width - this.startX; // width of the div => width - lineHeight in pixels on each side
+                    this.timeoutFunction = null;
+
+                    this.ctx.fillStyle = this.activeColor;;
+                    this.ctx.font= "bold " + this.fontSize + "px Verdana"; // "px Handjet";
+                    this.ctx.textAlign = "center";
+                }
+
+                start() {
+                    this.setTimeout(() => {this.draw(0)}, this.song.lyrics[0].duration);
+                }
+
+                end() {
+                    delete this.timeoutFunction;
+                }
+
+                setTimeout(...args) {
+                    this.timeoutFunction = setTimeout(...args);
+                }
+
+                draw(i) {
+                    let textStart = this.width / 2; // helps with centering the text
+                    this.ctx.clearRect(0, 0, this.width, this.height);
+                    this.ctx.fillStyle = this.activeColor;
+                    let splitLines = this.wrapText(this.song.lyrics[i].lyric.text),
+                        numLines = splitLines.length,
+                        thisY = this.startY,
+                        j = 0;
                     splitLines.forEach(line => {
-                        thisY = thisY + (lineHeight * j);
-                        ctx.fillText(line, width, thisY);
+                        thisY = thisY + (this.lineHeight * j);
+                        this.ctx.fillText(line, textStart, thisY);
                         j++;
                     });
-                }
-                if (i > 0) {
-                    // draw previous line above
-                    ctx.fillStyle = "grey";
-                    let splitLines = wrapText(ctx, lines[i-1].lyric, 1080 - startX, lineHeight);
-                    thisY = startY - lineHeight; // move to previous line from middle
-                    let numSplitLines = splitLines.length;
-                    for (let k = numSplitLines - 1, j=0;  k >= 0; k--, j++ ) {
-                        thisY = thisY - (lineHeight * j);
-                        ctx.fillText(splitLines[k], width, thisY);
+                    if (i < this.song.numLyrics-1) {
+                        // draw next line below
+                        thisY += this.lineHeight, j = 0; // move to next line and reset counter
+                        this.ctx.fillStyle = this.inactiveColor;
+                        // can use thisY and j from above
+                        let splitLines = this.wrapText(this.song.lyrics[i+1].lyric.text);
+                        splitLines.forEach(line => {
+                            thisY = thisY + (this.lineHeight * j);
+                            this.ctx.fillText(line, textStart, thisY);
+                            j++;
+                        });
                     }
-                }
-                i++;
-                if (i < lines.length) {
-                    setTimeout(draw, lines[i].time, i);
-                }
-            }
-
-            function calculateMilliseconds(line) {
-                let minutes = parseInt(line.minutes),
-                    seconds = parseInt(line.seconds),
-                    milliseconds = parseInt(line.milliseconds);
-                return ((minutes * 60) + seconds) * 1000 + milliseconds;
-            }
-
-            // @description: wrapText wraps HTML canvas text onto a canvas of fixed width
-            // @param ctx - the context for the canvas we want to wrap text on
-            // @param text - the text we want to wrap.
-            // @param maxWidth - the width at which we want line breaks to begin - i.e. the maximum width of the canvas.
-            // @param lineHeight - the height of each line, so we can space them below each other.
-            // @returns an array of lineText strings for all lines
-            const wrapText = function (ctx, text, maxWidth, lineHeight) {
-                // First, start by splitting all of our text into words, but splitting it into an array split by spaces
-                let words = text.split(' ');
-                let line = ''; // This will store the text of the current line
-                let testLine = ''; // This will store the text when we add a word, to test if it's too long
-                let lineArray = []; // This is an array of lines, which the function will return
-                let y = Math.round(lineHeight / 6); // 1/2 the fontSize of a gap from the top
-
-                // Lets iterate over each word
-                for (var n = 0; n < words.length; n++) {
-                    // Create a test line, and measure it..
-                    testLine += `${words[n]} `;
-                    let metrics = ctx.measureText(testLine);
-                    let testWidth = metrics.width;
-                    // If the width of this test line is more than the max width
-                    if (testWidth > maxWidth && n > 0) {
-                        // Then the line is finished, push the current line into "lineArray"
-                        lineArray.push(line);
-                        // Increase the line height, so a new line is started
-                        y += lineHeight;
-                        // Update line and test line to use this word as the first word on the next line
-                        line = `${words[n]} `;
-                        testLine = `${words[n]} `;
+                    if (i > 0) {
+                        // draw previous line above
+                        this.ctx.fillStyle = this.inactiveColor;
+                        let splitLines = this.wrapText(this.song.lyrics[i-1].lyric.text);
+                        thisY = this.startY - this.lineHeight; // move to previous line from middle
+                        let numSplitLines = splitLines.length;
+                        for (let k = numSplitLines - 1, j=0;  k >= 0; k--, j++ ) {
+                            thisY = thisY - (this.lineHeight * j);
+                            this.ctx.fillText(splitLines[k], textStart, thisY);
+                        }
+                    }
+                    i++;
+                    if (i < this.song.numLyrics) {
+                        this.setTimeout(() => { this.draw(i)}, this.song.lyrics[i].duration);
                     }
                     else {
-                        // If the test line is still less than the max width, then add the word to the current line
-                        line += `${words[n]} `;
-                    }
-                    // If we never reach the full max width, then there is only one line.. so push it into the lineArray so we return something
-                    if (n === words.length - 1) {
-                        lineArray.push(line);
+                        this.end();
                     }
                 }
-                // Return the line array
-                return lineArray;
+                // @description: wrapText wraps HTML canvas text onto a canvas of fixed width
+                // @param text - the text we want to wrap.
+                // @returns an array of lineText strings for all lines
+                wrapText(text) {
+                    // First, start by splitting all of our text into words, but splitting it into an array split by spaces
+                    let words = text.split(' ');
+                    let line = ''; // This will store the text of the current line
+                    let testLine = ''; // This will store the text when we add a word, to test if it's too long
+                    let lineArray = []; // This is an array of lines, which the function will return
+                    let y = Math.round(this.lineHeight / 6); // 1/2 the fontSize of a gap from the top
+
+                    // Lets iterate over each word
+                    for (var n = 0; n < words.length; n++) {
+                        // Create a test line, and measure it..
+                        testLine += `${words[n]} `;
+                        let metrics = this.ctx.measureText(testLine);
+                        let testWidth = metrics.width;
+                        // If the width of this test line is more than the max width
+                        if (testWidth > this.endX && n > 0) {
+                            // Then the line is finished, push the current line into "lineArray"
+                            lineArray.push(line);
+                            // Increase the line height, so a new line is started
+                            y += this.lineHeight;
+                            // Update line and test line to use this word as the first word on the next line
+                            line = `${words[n]} `;
+                            testLine = `${words[n]} `;
+                        }
+                        else {
+                            // If the test line is still less than the max width, then add the word to the current line
+                            line += `${words[n]} `;
+                        }
+                        // If we never reach the full max width, then there is only one line.. so push it into the lineArray so we return something
+                        if (n === words.length - 1) {
+                            lineArray.push(line);
+                        }
+                    }
+                    // Return the line array
+                    return lineArray;
+                }
             }
+
+            const canvas = document.getElementById("canvas");
+
+            let myFont = new FontFace(
+                "Handjet",
+                "url(https://fonts.gstatic.com/s/nerkoone/v16/m8JQjfZSc7OXlB3ZMOjDd5RARGmK3Q.woff2)"
+            );
+
+            let song, video;
+            myFont.load().then((font) => {
+                document.fonts.add(font);
+                song = new Song(document.getElementById('lyrics').innerHTML.trim());
+                video = new LyricVideo(song, canvas);
+                video.start();
+            });
 
         </script>
     </body>
