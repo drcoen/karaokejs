@@ -43,17 +43,66 @@
             class Song {
                 constructor(lyricsText) {
                     let prevTime = 0;
-                    this.lyrics = lyricsText.split("\n").map(function(line) {
-                        let lyric = new Lyric(line);
-                        let currTime = lyric.startTimeInMilliseconds(),
-                            ret = {
-                                lyric: lyric,
-                                duration: (currTime - prevTime)
-                            };
-                        prevTime = currTime;
-                        return ret;
-                    });
+                    this.parseLyrics(lyricsText);
+                    this.addStartLyric();
                     this.numLyrics = this.lyrics.length;
+                }
+
+                parseLyrics(lyricsText) {
+                    let lyrics = lyricsText.split("\n")
+                    .filter((line) => {
+                        return line.trim().length > 0;
+                    });
+                    lyrics = lyrics.map((line) => {
+                        // first create an array of Lyrics
+                        let lyric = new Lyric(line);
+                        return {
+                            lyric: lyric,
+                            duration: 0
+                        };
+                    });
+                    // then caluclate each one's duration, based on the time of the previous one
+                    for (let i = lyrics.length - 1; i >= 0; i--) {
+                        let duration = 1; // default to 1 rather than 0 as it helps with 'elapsed' calculation later
+                        if (i < lyrics.length - 1) {
+                            duration = lyrics[i + 1].lyric.startTimeInMilliseconds() -
+                                lyrics[i].lyric.startTimeInMilliseconds();
+                        }
+                        lyrics[i].duration = duration;
+                    }
+                    this.lyrics = lyrics;
+                }
+
+                get duration() {
+                    if (!this.length) {
+                        const lastLyric = this.lyrics[this.lyrics.length-1].lyric;
+                        this.length = lastLyric.startTimeInMilliseconds()
+                    }
+                    return this.length;
+                }
+
+                activeLyric(elapsed) {
+                    let index = 1, stop = false, activeLyric = null;
+                    while (!stop && index < this.numLyrics) {
+                        if (this.lyrics[index].lyric.startTimeInMilliseconds() > elapsed) {
+                            stop = true;
+                        }
+                        else {
+                            index++;
+                        }
+                    }
+                    if (stop) {
+                        activeLyric = this.lyrics[index-1];
+                    }
+                    return activeLyric;
+                }
+
+                addStartLyric() {
+                    let startLyric = {
+                        lyric: new Lyric('[00:00.000](start)'),
+                        duration: this.lyrics[0].lyric.startTimeInMilliseconds()
+                    };
+                    this.lyrics = [startLyric, ...this.lyrics];
                 }
             }
 
@@ -78,18 +127,21 @@
                     this.inactiveColor = options.inactiveColor || 'grey';
                     this.endX = this.width - this.startX; // width of the div => width - lineHeight in pixels on each side
                     this.timeoutFunction = null;
+                    this._animationStartTime = null;
 
-                    this.ctx.fillStyle = this.activeColor;;
+                    this.ctx.fillStyle = this.activeColor;
                     this.ctx.font= "bold " + this.fontSize + "px Verdana"; // "px Handjet";
                     this.ctx.textAlign = "center";
                 }
 
                 start() {
-                    this.setTimeout(() => {this.draw(0)}, this.song.lyrics[0].duration);
+                    requestAnimationFrame((timestamp) => {this.draw(0)});
+                    requestAnimationFrame((timestamp) => {this.drawStatusBar(timestamp)});
                 }
 
                 end() {
                     delete this.timeoutFunction;
+                    this._animationStartTime = null;
                 }
 
                 setTimeout(...args) {
@@ -98,9 +150,10 @@
 
                 draw(i) {
                     let textStart = this.width / 2; // helps with centering the text
+                    let songLyric = this.song.lyrics[i];
                     this.ctx.clearRect(0, 0, this.width, this.height);
                     this.ctx.fillStyle = this.activeColor;
-                    let splitLines = this.wrapText(this.song.lyrics[i].lyric.text),
+                    let splitLines = this.wrapText(songLyric.lyric.text),
                         numLines = splitLines.length,
                         thisY = this.startY,
                         j = 0;
@@ -134,12 +187,58 @@
                     }
                     i++;
                     if (i < this.song.numLyrics) {
-                        this.setTimeout(() => { this.draw(i)}, this.song.lyrics[i].duration);
+                        this.setTimeout(() => { this.draw(i)}, songLyric.duration);
                     }
                     else {
                         this.end();
                     }
                 }
+
+                drawStatusBar(timestamp) {
+                    let keepDrawing = true;
+                    if (!isNaN(timestamp)) {
+                        this._animationStartTime = this._animationStartTime || timestamp;
+                        const duration = this.song.duration,
+                            elapsed = timestamp - this._animationStartTime,
+                            fraction = elapsed / duration;
+                        this.ctx.save();
+                        this.ctx.fillStyle = this.inactiveColor;
+                        this.ctx.fillRect(0, this.height - 20, Math.round(fraction * this.width), 20);
+                        this.ctx.restore();
+                        keepDrawing = fraction < 1;
+                        if (keepDrawing) {
+                            this.drawLyricStatusBar(timestamp, elapsed);
+                        }
+                    }
+                    if (keepDrawing) {
+                        requestAnimationFrame((ts) => {this.drawStatusBar(ts)});
+                    }
+                }
+
+                drawLyricStatusBar(timestamp, elapsed) {
+                    let activeLyric = this.song.activeLyric(elapsed);
+                    if (null === activeLyric) {
+                        return;
+                    }
+                    this._previousLyricFraction = this._previousLyricFraction || 0;
+
+                    const lyricElapsed = Math.round(elapsed - activeLyric.lyric.startTimeInMilliseconds()),
+                        lyricDuration =  activeLyric.duration;
+                    let fraction = lyricElapsed / lyricDuration;
+                    if (fraction < this._previousLyricFraction || fraction >= 1) {
+                        // we're on to a new lyric
+                        delete this._previousLyricFraction;
+                        fraction = 1;
+                    }
+                    else {
+                        this._previousLyricFraction = fraction;
+                    }
+                    this.ctx.save();
+                    this.ctx.fillStyle = this.activeColor;
+                    this.ctx.fillRect(0, this.height - 40, Math.round(fraction * this.width), 20);
+                    this.ctx.restore();
+                }
+
                 // @description: wrapText wraps HTML canvas text onto a canvas of fixed width
                 // @param text - the text we want to wrap.
                 // @returns an array of lineText strings for all lines
