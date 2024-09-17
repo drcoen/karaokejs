@@ -120,9 +120,10 @@
                 // @param options.fontSize - font size
                 // @param options.lineHeight - line height
                 // @param options.startX
-                // @param options.startYs
+                // @param options.startY
                 // @param options.activeColor
                 // @param options.inactiveColor
+                // @param options.statusBarHeight
                 constructor(song, canvas, options = {}) {
                     this.song = song;
                     this.canvas = canvas;
@@ -137,7 +138,7 @@
                     this.inactiveColor = options.inactiveColor || 'grey';
                     this.endX = this.width - this.startX; // width of the div => width - lineHeight in pixels on each side
                     this.timeoutFunction = null;
-                    this._animationStartTime = null;
+                    this.statusBarHeight = options.statusBarHeight || 20;
 
                     this.ctx.fillStyle = this.activeColor;
                     this.ctx.font= "bold " + this.fontSize + "px Verdana"; // "px Handjet";
@@ -151,7 +152,7 @@
 
                 end() {
                     delete this.timeoutFunction;
-                    this._animationStartTime = null;
+                    delete this._animationStartTime;
                 }
 
                 setTimeout(...args) {
@@ -213,7 +214,7 @@
                             fraction = elapsed / duration;
                         this.ctx.save();
                         this.ctx.fillStyle = this.inactiveColor;
-                        this.ctx.fillRect(0, this.height - 20, Math.round(fraction * this.width), 20);
+                        this.ctx.fillRect(0, this.height - this.statusBarHeight, Math.round(fraction * this.width), this.statusBarHeight);
                         this.ctx.restore();
                         keepDrawing = fraction < 1;
                         if (keepDrawing) {
@@ -226,6 +227,7 @@
                 }
 
                 drawLyricStatusBar(timestamp, elapsed) {
+                    this.ctx.clearRect(0, this.height - (this.statusBarHeight * 2), this.width, this.statusBarHeight)
                     let activeLyric = this.song.activeLyric(elapsed);
                     if (null === activeLyric) {
                         return;
@@ -245,7 +247,7 @@
                     }
                     this.ctx.save();
                     this.ctx.fillStyle = this.activeColor;
-                    this.ctx.fillRect(0, this.height - 40, Math.round(fraction * this.width), 20);
+                    this.ctx.fillRect(0, this.height - (this.statusBarHeight * 2), Math.round(fraction * this.width), this.statusBarHeight);
                     this.ctx.restore();
                 }
 
