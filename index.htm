@@ -73,7 +73,7 @@
                     });
                     // then caluclate each one's duration, based on the time of the previous one
                     for (let i = lyrics.length - 1; i >= 0; i--) {
-                        let duration = 1; // default to 1 rather than 0 as it helps with 'elapsed' calculation later
+                        let duration = 100; // default to 100ms rather than 0 as it helps with 'elapsed' calculation later
                         if (i < lyrics.length - 1) {
                             duration = lyrics[i + 1].lyric.startTimeInMilliseconds() -
                                 lyrics[i].lyric.startTimeInMilliseconds();
@@ -139,20 +139,24 @@
                     this.endX = this.width - this.startX; // width of the div => width - lineHeight in pixels on each side
                     this.timeoutFunction = null;
                     this.statusBarHeight = options.statusBarHeight || 20;
+                    this.recorder = null;
+                    this.bgColor = options.bgColor || 'lightblue';
 
-                    this.ctx.fillStyle = this.activeColor;
                     this.ctx.font= "bold " + this.fontSize + "px Verdana"; // "px Handjet";
                     this.ctx.textAlign = "center";
                 }
 
                 start() {
+                    this.startRecording();
                     requestAnimationFrame((timestamp) => {this.draw(0)});
                     requestAnimationFrame((timestamp) => {this.drawStatusBar(timestamp)});
                 }
 
                 end() {
+                    this.rec.stop();
                     delete this.timeoutFunction;
                     delete this._animationStartTime;
+                    this.exportVid();
                 }
 
                 setTimeout(...args) {
@@ -160,9 +164,12 @@
                 }
 
                 draw(i) {
+                    // first, set the background colour
+                    this.ctx.fillStyle = this.bgColor;
+                    this.ctx.fillRect(0, 0, this.width, this.height);
+
                     let textStart = this.width / 2; // helps with centering the text
                     let songLyric = this.song.lyrics[i];
-                    this.ctx.clearRect(0, 0, this.width, this.height);
                     this.ctx.fillStyle = this.activeColor;
                     let splitLines = this.wrapText(songLyric.lyric.text),
                         numLines = splitLines.length,
@@ -227,7 +234,8 @@
                 }
 
                 drawLyricStatusBar(timestamp, elapsed) {
-                    this.ctx.clearRect(0, this.height - (this.statusBarHeight * 2), this.width, this.statusBarHeight)
+                    this.ctx.fillStyle = this.bgColor;
+                    this.ctx.fillRect(0, this.height - (this.statusBarHeight * 2), this.width, this.statusBarHeight)
                     let activeLyric = this.song.activeLyric(elapsed);
                     if (null === activeLyric) {
                         return;
@@ -249,6 +257,33 @@
                     this.ctx.fillStyle = this.activeColor;
                     this.ctx.fillRect(0, this.height - (this.statusBarHeight * 2), Math.round(fraction * this.width), this.statusBarHeight);
                     this.ctx.restore();
+                }
+
+                exportVid(blob) {
+                    if (null === blob || typeof blob !== 'object') {
+                        return;
+                    }
+                    const src = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.download = 'lyrics.webm';
+                    a.href = src;
+                    a.textContent = 'download the video';
+                    a.style.display = 'none'
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(src);
+                }
+
+                startRecording() {
+                    const chunks = []; // here we will store our recorded media chunks (Blobs)
+                    const stream = this.canvas.captureStream(); // grab our canvas MediaStream
+                    this.rec = new MediaRecorder(stream); // init the recorder
+                    // every time the recorder has new data, we will store it in our array
+                    this.rec.ondataavailable = (e) => chunks.push(e.data);
+                    // only when the recorder stops, we construct a complete Blob from all the chunks
+                    this.rec.onstop = (e) => this.exportVid(new Blob(chunks, { type: 'video/webm' }));
+
+                    this.rec.start();
                 }
 
                 // @description: wrapText wraps HTML canvas text onto a canvas of fixed width
