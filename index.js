@@ -14,12 +14,15 @@ const mainTemplate = require('./mainTemplate.js');
 
     const browser = await puppeteer.launch({headless: true});
     const page = await browser.newPage();
-    await page.setDefaultTimeout(180000);
     // set browser to automatically download any download links to the current folder
     const client = await page.createCDPSession();
     await client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: '.'});
     // load our canvas file
     await page.goto('file://' + __dirname + '/' + mainFileName);
+    const duration = await page.evaluate(() => {
+        return song.duration;
+    });
+    await page.setDefaultTimeout(duration + 2000); // give an extra 2 seconds, to be safe!
     // wait for the download link to appear
     await page.locator(downloadLink).wait();
     await page.click(downloadLink);
