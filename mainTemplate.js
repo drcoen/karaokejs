@@ -3,32 +3,47 @@
  * @author David Coen
  * 
  * @param {String} lyrics Full contents of a .lrc file
- * @param {Object} font (@optional)
- *   @required font.name {string} Font name 
- *   @optional font.url {string}  Font URL, e.g. (https://fonts.gstatic.com/s/nerkoone/v16/m8JQjfZSc7OXlB3ZMOjDd5RARGmK3Q.woff2)
- *   options.fontBold {boolean} font in bold (true/false)
+ * @param {Object} options All optional
+ *   options.fontSize {integer} Font size in pixels
+ *   options.fontBold {boolean} Should the font be bolded
+ *   options.fontFamily {string} Font family to use
+ *   options.fontUrl {string} URL from where to download a font from, e.g. https://fonts.gstatic.com/s/nerkoone/v16/m8JQjfZSc7OXlB3ZMOjDd5RARGmK3Q.woff2
+ *   options.activeColor {string} CSS-compliant color for the current lyric and its status bar
+ *   options.inactiveColor {string} CSS-compliant color for the inactive lyrics and the overall song status bar
+ *   options.bgColor {string} CSS-compliant color for the background of the video
+ *   options.statusBarHeight {integer} Status Bar(s) height in pixels
  * @returns {string} A full HTML file
  */
-module.exports = function mainTemplate(lyrics, font = null) {
+module.exports = function mainTemplate(lyrics, options = null) {
     // if URL is specified, it's an external font, so we need extra code;
     // otherwise we assume the font will be installed on the local machine
-    const hasFont = font !== null && (typeof font === 'object') && font.name && font.url;
+    const hasFont = options.fontFamily && options.fontUrl;
+    let expectedOptionsToPassToJS = ['fontSize', 'fontBold', 'fontFamily', 'fontUrl', 'activeColor', 'inactiveColor', 'bgColor', 'statusBarHeight'],
+        optionsToPass = {};
+    expectedOptionsToPassToJS.forEach((optionName) => {
+        if (options[optionName]) {
+            optionsToPass[optionName] = options[optionName];
+        }
+    });
+    if (options.out) {
+        optionsToPass.downloadFilename = options.out;
+    }
+    optionsToPass = JSON.stringify(optionsToPass);
+
     let ret = `<!DOCTYPE html>
 <html>
 <head>
     <title>Canvas playground</title>
     <style type="text/css">
         #canvas {
-            width: 1080px;
-            height: 1350px;
-            border: 1px solid black;
-            margin: auto;
+            width: ${options.width}px;
+            height: ${options.height}px;
         }
     </style>
 </head>
 
 <body>
-    <canvas id="canvas" width="1080" height="1350"></canvas>
+    <canvas id="canvas" width="${options.width}" height="${options.height}"></canvas>
     <script type="text/template" id="lyrics">
     ${lyrics}
     </script>
@@ -42,8 +57,8 @@ module.exports = function mainTemplate(lyrics, font = null) {
 
     if (hasFont) {
         ret += `let myFont = new FontFace(
-            "Handjet",
-            "url(https://fonts.gstatic.com/s/nerkoone/v16/m8JQjfZSc7OXlB3ZMOjDd5RARGmK3Q.woff2)"
+            "${options.fontFamily}",
+            "url(${options.fontUrl})"
         );
         let song, video;
         myFont.load().then((font) => {
@@ -56,7 +71,7 @@ module.exports = function mainTemplate(lyrics, font = null) {
     ret += `
         try {
             song = new Song(document.getElementById('lyrics').innerHTML.trim());
-            video = new LyricVideo(song, canvas);
+            video = new LyricVideo(song, canvas, ${optionsToPass});
             video.start();
         }
         catch (err) {

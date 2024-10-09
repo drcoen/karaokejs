@@ -1,8 +1,11 @@
 {
-  "name": "karaoke",
+  "name": "karaokejs",
   "version": "0.1.0",
   "description": "\"Create a kraoke video for a song from a .lrc lyrics file\"",
   "main": "index.js",
+  "bin": {
+    "karaokejs": "./index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,6 +21,7 @@
   "type": "commonjs",
   "dependencies": {
     "puppeteer": "^23.5.0",
-    "puppeteer-core": "^23.5.0"
+    "puppeteer-core": "^23.5.0",
+    "yargs": "^17.7.2"
   }
 }
