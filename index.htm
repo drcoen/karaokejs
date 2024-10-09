@@ -49,9 +49,14 @@
             let song, video;
             myFont.load().then((font) => {
                 document.fonts.add(font);
-                song = new Song(document.getElementById('lyrics').innerHTML.trim());
-                video = new LyricVideo(song, canvas);
-                video.start();
+                try {
+                    song = new Song(document.getElementById('lyrics').innerHTML.trim());
+                    video = new LyricVideo(song, canvas);
+                    video.start();
+                }
+                catch (err) {
+                    console.error(err.message);
+                }
             });
 
         </script>

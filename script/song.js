@@ -6,6 +6,7 @@
 class Song {
     /**
      * @param {string} lyricsText Entire contents of a .lrc file
+     * @throws Error if any lyrics are invalid
      */
     constructor(lyricsText) {
         this.parseLyrics(lyricsText);
@@ -17,6 +18,7 @@ class Song {
      * Read the lyrics text, split into individual lines, create an array of Lyrics
      * @property {Array:Lyric} lyrics Sets the property this.lyrics
      * @param {string} lyricsText Entire contents of a .lrc file
+     * @throws Error if any lyrics are invalid
      */
     parseLyrics(lyricsText) {
         let lyrics = lyricsText.split("\n")

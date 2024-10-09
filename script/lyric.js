@@ -6,10 +6,15 @@
 class Lyric {
     /**
      * @param {string} line string of text of the format '[mm:ss.mss]Lyric text'
+     * @throws Error if invalid format
      */
     constructor(line) {
         let regex = /^\[(?<minutes>\d+)\:(?<seconds>\d+)\.(?<milliseconds>\d+)\](?<lyric>.*)$/,
-            data = line.trim().match(regex).groups;
+            data = line.trim().match(regex);
+        if (null === data || !data.groups) {
+            throw new Error('Invalid lyric, must be of the form \'[mm:ss.mss]Lyric text\', we got: "' + line + '"');
+        }
+        data = data.groups;
         this.minutes = parseInt(data.minutes);
         this.seconds = parseInt(data.seconds);
         this.milliseconds = parseInt(data.milliseconds);

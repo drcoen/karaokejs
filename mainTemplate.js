@@ -54,9 +54,14 @@ module.exports = function mainTemplate(lyrics, font = null) {
     }
 
     ret += `
-        song = new Song(document.getElementById('lyrics').innerHTML.trim());
-        video = new LyricVideo(song, canvas);
-        video.start();`;
+        try {
+            song = new Song(document.getElementById('lyrics').innerHTML.trim());
+            video = new LyricVideo(song, canvas);
+            video.start();
+        }
+        catch (err) {
+            console.log(err);
+        }`;
 
     if (hasFont) {
         ret += `});`;
