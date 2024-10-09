@@ -1,11 +1,25 @@
-export default class LyricVideo {
-    // @param options.fontSize - font size
-    // @param options.lineHeight - line height
-    // @param options.startX
-    // @param options.startY
-    // @param options.activeColor
-    // @param options.inactiveColor
-    // @param options.statusBarHeight
+/**
+ * The LyricVideo class
+ * @description Stores all interactions with the <canvas> element
+ * @author David Coen
+ */
+class LyricVideo {
+    /**
+     * @param {Song} song a parsed Song object that you want to generate the video for
+     * @param {HTMLElement} canvas the canvas we're doing to draw on
+     * @param {Object} options
+     *   options.fontSize {integer} font size (numeric, in pixels)
+     *   options.fontBold {boolean} font in bold (true/false)
+     *   options.fontFamily {string} font family
+     *   options.lineHeight {integer} line height (numeric, in pixels)
+     *   options.startX {integer} - Start position of main lyric, vertical (numeric, in pixels)
+     *   options.startY {integer} - Start position of main lyric, horizontal (numeric, in pixels)
+     *   options.activeColor {CSS color string} - main lyric and its status bar, e.g. 'red', '#f00'
+     *   options.inactiveColor {CSS color string} - other lyrics and song status bar
+     *   options.bgColor {CSS color string} - background color
+     *   options.statusBarHeight {integer} - height of each status bar
+     *   options.downloadFilename {string} - filename of output (downloaded to current directory)
+     */
     constructor(song, canvas, options = {}) {
         this.song = song;
         this.canvas = canvas;
@@ -23,17 +37,29 @@ export default class LyricVideo {
         this.statusBarHeight = options.statusBarHeight || 20;
         this.recorder = null;
         this.bgColor = options.bgColor || 'lightblue';
+        this.downloadFilename = options.downloadFilename || 'lyrics.webm';
 
-        this.ctx.font = "bold " + this.fontSize + "px Verdana"; // "px Handjet";
+        let bold = 'bold ';
+        if (null !== options.fontBold && options.fontBold === false) {
+            bold = '';
+        }
+        let fontFamily = options.fontFamily || 'Verdana';
+        this.ctx.font = `${bold}${this.fontSize}px ${fontFamily}`;
         this.ctx.textAlign = "center";
     }
 
+    /**
+     * @description sets up the Media Recorder, initialises the 2 draw events
+     */
     start() {
         this.startRecording();
         requestAnimationFrame((timestamp) => { this.draw(0) });
         requestAnimationFrame((timestamp) => { this.drawStatusBar(timestamp) });
     }
 
+    /**
+     * @description stops Media Recorder recording, sets the recorded video in the browser to be downloaded
+     */
     end() {
         this.rec.stop();
         delete this.timeoutFunction;
@@ -41,10 +67,17 @@ export default class LyricVideo {
         this.exportVid();
     }
 
+    /**
+     * @description stores the current timeout operation, if we ever wanted to cancel the stream
+     */
     setTimeout(...args) {
         this.timeoutFunction = setTimeout(...args);
     }
 
+    /**
+     * @description draw the lyrics
+     * @param {integer} i display the ith lyric in the song
+     */
     draw(i) {
         // first, set the background colour
         this.ctx.fillStyle = this.bgColor;
@@ -90,10 +123,16 @@ export default class LyricVideo {
             this.setTimeout(() => { this.draw(i) }, songLyric.duration);
         }
         else {
-            this.end();
+            // doing a timeout here because the browser can be still rendering the video by the
+            // time the code gets to here
+            setTimeout(function () { this.end() }.bind(this), 500);
         }
     }
 
+    /**
+     * @description draw the main song status bar
+     * @param {*} timestamp time the function was called (helps finding where we are in the song)
+     */
     drawStatusBar(timestamp) {
         let keepDrawing = true;
         if (!isNaN(timestamp)) {
@@ -107,7 +146,7 @@ export default class LyricVideo {
             this.ctx.restore();
             keepDrawing = fraction < 1;
             if (keepDrawing) {
-                this.drawLyricStatusBar(timestamp, elapsed);
+                this.drawLyricStatusBar(elapsed);
             }
         }
         if (keepDrawing) {
@@ -115,7 +154,12 @@ export default class LyricVideo {
         }
     }
 
-    drawLyricStatusBar(timestamp, elapsed) {
+    /**
+     * @description draw the second, lyrics, status bar
+     * @param {integer} elapsed timestamp, based on where we are in the song, assuming song starts at time 0
+     * @returns 
+     */
+    drawLyricStatusBar(elapsed) {
         this.ctx.fillStyle = this.bgColor;
         this.ctx.fillRect(0, this.height - (this.statusBarHeight * 2), this.width, this.statusBarHeight)
         let activeLyric = this.song.activeLyric(elapsed);
@@ -141,21 +185,28 @@ export default class LyricVideo {
         this.ctx.restore();
     }
 
+    /**
+     * @description create a download link  in the document and populate it with our video
+     * @param {Blob} blob video contents from Media Recorder
+     * @returns 
+     */
     exportVid(blob) {
         if (null === blob || typeof blob !== 'object') {
             return;
         }
         const src = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.download = 'lyrics.webm';
+        a.download = this.downloadFilename;
+        a.id = "video-download";
         a.href = src;
         a.textContent = 'download the video';
-        a.style.display = 'none'
+        a.style.display = 'inline';
         document.body.appendChild(a);
-        a.click();
-        URL.revokeObjectURL(src);
     }
 
+    /**
+     * @description Initialise the Media Reocder to collect the video stream, start recording
+     */
     startRecording() {
         const chunks = []; // here we will store our recorded media chunks (Blobs)
         const stream = this.canvas.captureStream(); // grab our canvas MediaStream
@@ -168,9 +219,12 @@ export default class LyricVideo {
         this.rec.start();
     }
 
-    // @description: wrapText wraps HTML canvas text onto a canvas of fixed width
-    // @param text - the text we want to wrap.
-    // @returns an array of lineText strings for all lines
+    /**
+     * @description wraps HTML canvas text onto a canvas of fixed width
+     * this is a modified version of the function from https://fjolt.com/article/html-canvas-how-to-wrap-text
+     * @param {string} text the text we want to wrap
+     * @returns {Array} an array of lineText strings for all lines
+     */
     wrapText(text) {
         // First, start by splitting all of our text into words, but splitting it into an array split by spaces
         let words = text.split(' ');

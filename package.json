@@ -1,0 +1,23 @@
+{
+  "name": "karaoke",
+  "version": "0.1.0",
+  "description": "\"Create a kraoke video for a song from a .lrc lyrics file\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "karaoke",
+    "canvas",
+    "puppeteer",
+    "puppet-canvas"
+  ],
+  "author": "David Coen",
+  "license": "GPL-3.0-or-later",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer": "^23.5.0",
+    "puppeteer-core": "^23.5.0"
+  }
+}

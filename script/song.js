@@ -1,13 +1,23 @@
-import Lyric from './lyric.js';
-
-export default class Song {
+/**
+ * The Song class
+ * @description Parses a lyric file into an array of Lyric objects
+ * @author David Coen
+ */
+class Song {
+    /**
+     * @param {string} lyricsText Entire contents of a .lrc file
+     */
     constructor(lyricsText) {
-        let prevTime = 0;
         this.parseLyrics(lyricsText);
         this.addStartLyric();
         this.numLyrics = this.lyrics.length;
     }
 
+    /**
+     * Read the lyrics text, split into individual lines, create an array of Lyrics
+     * @property {Array:Lyric} lyrics Sets the property this.lyrics
+     * @param {string} lyricsText Entire contents of a .lrc file
+     */
     parseLyrics(lyricsText) {
         let lyrics = lyricsText.split("\n")
             .filter((line) => {
@@ -33,6 +43,10 @@ export default class Song {
         this.lyrics = lyrics;
     }
 
+    /**
+     * Gets the total duration of the song. Sets it as an attribute
+     * @return {integer} this.length The time of the last lyric, which should indicate it's end
+     */
     get duration() {
         if (!this.length) {
             const lastLyric = this.lyrics[this.lyrics.length - 1].lyric;
@@ -41,6 +55,11 @@ export default class Song {
         return this.length;
     }
 
+    /**
+     * Get the active Lyric based on the amount of time elapsed since 0
+     * @param {integer} elapsed Timiestamp in milliseconds of time elapsed in song
+     * @returns {Lyric} The current lyric being displayed
+     */
     activeLyric(elapsed) {
         let index = 1, stop = false, activeLyric = null;
         while (!stop && index < this.numLyrics) {
@@ -57,6 +76,10 @@ export default class Song {
         return activeLyric;
     }
 
+    /**
+     * Insert a lyric at time 0
+     * Updates this.lyrics
+     */
     addStartLyric() {
         let startLyric = {
             lyric: new Lyric('[00:00.000](start)'),
