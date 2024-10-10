@@ -75,7 +75,7 @@ module.exports = function mainTemplate(lyrics, options = null) {
             video.start();
         }
         catch (err) {
-            console.log(err);
+            console.error(err.message);
         }`;
 
     if (hasFont) {

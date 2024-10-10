@@ -88,6 +88,14 @@ var args = require('yargs/yargs')(process.argv.slice(2))
     // set browser to automatically download any download links to the current folder
     const client = await page.createCDPSession();
     await client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: '.' });
+    await page.on('console', message => {
+        if (message.type() === 'error') {
+            console.error('Error: ' + message.text());
+            browser.close();
+            unlinkSync(mainFileName);
+            process.exit();
+        }
+    });
     // load our canvas file
     await page.goto('file://' + __dirname + '/' + mainFileName);
     const duration = await page.evaluate(() => {
