@@ -21,7 +21,7 @@
 
 ## About The Project
 
-This project aims to be a simple tool where one can generate a Karaoke video from an input ['.lrc'](https://en.wikipedia.org/wiki/LRC_(file_format)) lyrics file. It outputs a '.webm' video, which should be viewable all modern web browsers, as well as working Instagram and Youtube.
+This project aims to be a simple tool where one can generate a Karaoke video from an input ['.lrc'](https://en.wikipedia.org/wiki/LRC_(file_format)) lyrics file. It outputs a '.webm' video, which should be viewable on all modern web browsers, as well as working on Instagram and Youtube.
 
 The default video size is 1080x1350px, which is the default size required by Instagram. The default font for the lyrics is 70px (changeable), while the timer font is 32px (currently fixed).
 
@@ -37,7 +37,8 @@ The default video size is 1080x1350px, which is the default size required by Ins
 To get set up, you simply need to clone the repository, then install it globally:
 ```sh
 git clone https://github.com/drcoen/karaokejs.git .
-npm install -g .
+npm install
+npm install -g . # makes 'karaokejs' available on the CLI
 ```
 
 ## Usage
@@ -49,12 +50,19 @@ karaokejs -f filename.lrc
 # create video ./mysong.webm with yellow background, green text and no timer
 karaokejs -f mysong.lrc -o mysong.webm --bg-color yellow --active-color '#0f0' --hide-timer
 
+# use a custom font from Google
+karaokejs -f mysong.lrc --font-family Handjet --font-url https://fonts.gstatic.com/s/nerkoone/v16/m8JQjfZSc7OXlB3ZMOjDd5RARGmK3Q.woff2
+
 # hide status bar
-karaokejs -f mysong.lrc --statusBarHeight 0
+karaokejs -f mysong.lrc --status-bar-height 0
 
 # get help see all options
 karaokejs --help
 ```
+(if you don't want to install globally, replace `karaokejs` with `node .` above, assuming you're in the karaokejs directory)
+
+The video generation process takes at least as long as the song itself, since the whole thing needs to render in real-time. So, if your song is 5 minutes long, be prepared to wait 5 minutes!
+
 ### File format
 A sample lyric file is provided, see [sample.lrc](sample.lrc) (the first verse of 'Everybody Knows' by Leonard Cohen!). The file must contain only lines of the format `[hh:ss.mss]lyric text` and ideally the last line should be something like
 ```
@@ -62,10 +70,13 @@ A sample lyric file is provided, see [sample.lrc](sample.lrc) (the first verse o
 ```
 to show that the song ends after 1 minute and 2 seconds; otherwise it assumes the last lyric is when the song ends and thus so does the video.
 
-_Normally, there can be other data in a .lrc file, however the application currently doesn't support those lines, and throws an Exception rather than skipping over any mal-formatted line._
+_Normally, there can be other data in a .lrc file, however the application currently doesn't support those lines, and throws an Error rather than skipping over any malformatted line._
 
 ### Sample Video
 You can download the video for the sample.lrc provided at [https://www.dropbox.com/scl/fi/aafvqpxoj3na3fu7s62i7/karaoke.webm?rlkey=wj5d8r9kjrhjj0ujmnkxpmhc6&e=1&st=ovnwtm3e&dl=1](https://www.dropbox.com/scl/fi/aafvqpxoj3na3fu7s62i7/karaoke.webm?rlkey=wj5d8r9kjrhjj0ujmnkxpmhc6&e=1&st=ovnwtm3e&dl=1).
+
+### Sample Screenshot
+<img src="sample.png" alt="Sample screenshot" width="300" height="376">
 
 ## Contributing
 
