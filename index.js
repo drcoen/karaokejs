@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const { readFileSync, writeFileSync, unlinkSync } = require('node:fs');
-const mainTemplate = require('./mainTemplate.js');
+const mainTemplate = require('./helpers/mainTemplate.js');
 var CLI = require('clui'),
     Spinner = CLI.Spinner;
 

@@ -1,13 +1,13 @@
 {
   "name": "karaokejs",
   "version": "0.1.0",
-  "description": "\"Create a kraoke video for a song from a .lrc lyrics file\"",
+  "description": "\"Create a karaoke video for a song from a .lrc lyrics file\"",
   "main": "index.js",
   "bin": {
     "karaokejs": "./index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test ./tests/script/*.spec.js"
   },
   "keywords": [
     "javascript",
@@ -16,7 +16,7 @@
     "puppeteer",
     "puppet-canvas"
   ],
-  "author": "David Coen",
+  "author": "David Coen (http://www.drcoen.com)",
   "license": "GPL-3.0-or-later",
   "type": "commonjs",
   "dependencies": {
