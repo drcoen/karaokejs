@@ -1,6 +1,6 @@
 {
   "name": "karaokejs",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "\"Create a karaoke video for a song from a .lrc lyrics file\"",
   "main": "index.js",
   "bin": {

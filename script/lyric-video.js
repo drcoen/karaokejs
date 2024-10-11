@@ -140,7 +140,12 @@ class LyricVideo {
             this.#setTimeout(() => { this.#draw(i) }, songLyric.duration);
         }
         else {
-            this.#drawTimer(this.song.duration);
+            let duration = this.song.duration,
+                ms = duration % 1000;
+            if (ms >= 500) { // round up to the next second if necessary
+                duration += (1000 - ms);
+            }
+            this.#drawTimer(duration);
             // doing a timeout here because the browser can be still rendering the video by the
             // time the code gets to here
             setTimeout(function () { this.#end() }.bind(this), 500);

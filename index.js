@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 const puppeteer = require('puppeteer');
 const { readFileSync, writeFileSync, unlinkSync } = require('node:fs');
 const mainTemplate = require('./helpers/mainTemplate.js');
@@ -86,7 +87,7 @@ var args = require('yargs/yargs')(process.argv.slice(2))
     const lyricsFile = readFileSync(args.file, 'utf-8');
     // Create the HTML file
     const mainHtml = mainTemplate(lyricsFile, args);
-    const mainFileName = 'main.htm';
+    const mainFileName = __dirname + '/main.htm';
     writeFileSync(mainFileName, mainHtml);
 
     const browser = await puppeteer.launch({ headless: true });
@@ -103,7 +104,7 @@ var args = require('yargs/yargs')(process.argv.slice(2))
         }
     });
     // load our canvas file
-    await page.goto('file://' + __dirname + '/' + mainFileName);
+    await page.goto('file://' + mainFileName);
     const duration = await page.evaluate(() => {
         return song.duration;
     });
