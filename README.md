@@ -23,6 +23,7 @@
 
 This project aims to be a simple tool where one can generate a Karaoke video from an input ['.lrc'](https://en.wikipedia.org/wiki/LRC_(file_format)) lyrics file. It outputs a '.webm' video, which should be viewable all modern web browsers, as well as working Instagram and Youtube.
 
+The default video size is 1080x1350px, which is the default size required by Instagram. The default font for the lyrics is 70px (changeable), while the timer font is 32px (currently fixed).
 
 ### Built With/Min Requirements
 
@@ -62,6 +63,10 @@ A sample lyric file is provided, see [sample.lrc](sample.lrc) (the first verse o
 to show that the song ends after 1 minute and 2 seconds; otherwise it assumes the last lyric is when the song ends and thus so does the video.
 
 _Normally, there can be other data in a .lrc file, however the application currently doesn't support those lines, and throws an Exception rather than skipping over any mal-formatted line._
+
+### Sample Video
+You can download the video for the sample.lrc provided at [https://www.dropbox.com/scl/fi/aafvqpxoj3na3fu7s62i7/karaoke.webm?rlkey=wj5d8r9kjrhjj0ujmnkxpmhc6&e=1&st=ovnwtm3e&dl=1](https://www.dropbox.com/scl/fi/aafvqpxoj3na3fu7s62i7/karaoke.webm?rlkey=wj5d8r9kjrhjj0ujmnkxpmhc6&e=1&st=ovnwtm3e&dl=1).
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
