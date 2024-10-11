@@ -20,6 +20,7 @@
   "license": "GPL-3.0-or-later",
   "type": "commonjs",
   "dependencies": {
+    "clui": "^0.3.6",
     "puppeteer": "^23.5.0",
     "puppeteer-core": "^23.5.0",
     "yargs": "^17.7.2"

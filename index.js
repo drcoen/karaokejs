@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
 const { readFileSync, writeFileSync, unlinkSync } = require('node:fs');
 const mainTemplate = require('./mainTemplate.js');
+var CLI = require('clui'),
+    Spinner = CLI.Spinner;
 
 var args = require('yargs/yargs')(process.argv.slice(2))
     .usage("$0 --file lyrics.lrc [options]")
@@ -105,6 +107,8 @@ var args = require('yargs/yargs')(process.argv.slice(2))
     const duration = await page.evaluate(() => {
         return song.duration;
     });
+    var countdown = new Spinner('Generating video...');
+    countdown.start();
     await page.setDefaultTimeout(duration + 2000); // give an extra 2 seconds, to be safe!
     // wait for the download link to appear
     await page.locator(downloadLink).wait();
@@ -112,6 +116,6 @@ var args = require('yargs/yargs')(process.argv.slice(2))
     // wait for browser to finish downloading
     await page.waitForNetworkIdle();
     await browser.close();
+    countdown.stop();
     unlinkSync(mainFileName);
-    console.log('Finished!');
 })();
