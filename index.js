@@ -64,6 +64,10 @@ var args = require('yargs/yargs')(process.argv.slice(2))
         type: 'number',
         default: 1350
     })
+    .option('hide-timer', {
+        description: 'Don\'t show the timer text at the top',
+        type: 'boolean'
+    })
     .check((argv) => {
         if (argv.fontUrl && (!argv.fontFamily || argv.fontFamily === 'Verdana')) {
             throw new Error('font-url also requires a value for font-family');

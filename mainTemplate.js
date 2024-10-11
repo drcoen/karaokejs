@@ -18,7 +18,7 @@ module.exports = function mainTemplate(lyrics, options = null) {
     // if URL is specified, it's an external font, so we need extra code;
     // otherwise we assume the font will be installed on the local machine
     const hasFont = options.fontFamily && options.fontUrl;
-    let expectedOptionsToPassToJS = ['fontSize', 'fontBold', 'fontFamily', 'fontUrl', 'activeColor', 'inactiveColor', 'bgColor', 'statusBarHeight'],
+    let expectedOptionsToPassToJS = ['fontSize', 'fontBold', 'fontFamily', 'fontUrl', 'activeColor', 'inactiveColor', 'bgColor', 'statusBarHeight', 'hideTimer'],
         optionsToPass = {};
     expectedOptionsToPassToJS.forEach((optionName) => {
         if (options[optionName]) {

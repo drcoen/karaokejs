@@ -9,8 +9,8 @@ class Song {
      * @throws Error if any lyrics are invalid
      */
     constructor(lyricsText) {
-        this.parseLyrics(lyricsText);
-        this.addStartLyric();
+        this.#parseLyrics(lyricsText);
+        this.#addStartLyric();
         this.numLyrics = this.lyrics.length;
     }
 
@@ -19,8 +19,9 @@ class Song {
      * @property {Array:Lyric} lyrics Sets the property this.lyrics
      * @param {string} lyricsText Entire contents of a .lrc file
      * @throws Error if any lyrics are invalid
+     * @access private
      */
-    parseLyrics(lyricsText) {
+    #parseLyrics(lyricsText) {
         let lyrics = lyricsText.split("\n")
             .filter((line) => {
                 return line.trim().length > 0;
@@ -81,8 +82,9 @@ class Song {
     /**
      * Insert a lyric at time 0
      * Updates this.lyrics
+     * @access private
      */
-    addStartLyric() {
+    #addStartLyric() {
         let startLyric = {
             lyric: new Lyric('[00:00.000](start)'),
             duration: this.lyrics[0].lyric.startTimeInMilliseconds()
